@@ -1,0 +1,215 @@
+NOTES:
+- Maybe add FAQ & about & terms & policies
+- Auth with jwt: access token & refresh token both contains {role:}
+- Most of Deletes are Soft delete
+- Consider for every role table (isBlocked)
+
+A- Customer App API: BaseURL: /api/customers
+	1-Auth:
+		POST /auth/signup
+		POST /auth/login
+		POST /auth/social-login
+		POST /auth/verify-otp (for signup)
+		POST /auth/resend-otp (In case of failure of sending OTP)		
+		POST /auth/forget-password (Sending OTP)
+		POST /auth/reset-password (verify otp & new password)
+		POST auth/refresh-token
+	2- Profile:
+		GET /profile
+		PATCH /profile (for username, email,phone,DOB,firstname,lastName)
+		POST /profile/upload-image
+		PATCH /profile/change-password (old & new password)
+		DELETE /profile (For delete profile & send reason for admin)		
+		GET	/profile/wallet (Get app wallet)
+		GET /profile/notifications (List notifications)
+		
+	3- Home Flow (no need for auth to continue without login) 
+		GET /categories (Get all categories)
+		GET /categories/:cateogryId?tag=xyz&search=abc&sort-by=name&sort-order=asc|desc (Get tags & [collections|services] for a category)	(if cat==service get child tags withing its services)
+		GET /categories/:cateogryId/collections/:collectionId?tag=xyz&ordered-before=[1|0] (Get products & tags of this collection with collection details)		
+		GET /categories/:cateogryId/collections/:collectionId/products/:productId (Get product details)		
+		GET /categories/:cateogryId/collections/:collectionId/reviews (Get collection reviews)
+		GET /categories/:cateogryId/collections/:collectionId/products/:productId/reviews (Get product reviews)		
+		GET /categories/:cateogryId/services/:servicesId (Get service details)
+		GET /categories/:cateogryId/services/:servicesId/reviews (Get product reviews)
+		GET /workers/:workerId (Get worker details)
+		
+	4- Cart Management
+		GET /cart (Get cart items)
+		POST /cart (Add item to cart)
+		PATCH /cart/:itemId (Update quantity or comment for cart item) {MUST:action:[delete|comment]
+		DELETE /cart/:itemId (Remove item from cart)
+		
+	5-favourite list
+		GET	/fav-list?type=[products|collections]&tag=xyz (return favouriteProducts | favouriteCollection)
+		PATCH /fav-list
+		
+	6- Orders (maybe edit)
+		GET /orders (List all orders with tracking)
+		GET /orders/:orderId (Get specific order details)
+		POST /orders (Create an order [MUST: address & get data from cart & paymentMethod] [OPTIONAL: comment])		
+		PUT /orders/:orderId/cancel (Cancel order MUST be pending)
+		POST /orders/:orderId/return (Request return/refund)
+		
+	7- Coupons
+		GET /coupons (Get active coupons)
+		POST /coupons/claim (Claim a coupon from active coupons list)
+		POST /coupons/redeem (Redeem a coupon [MUST: be claimed])
+		
+	8- Reviews			
+		POST /categories/:cateogryId/collections/:collectionId/reviews (Submit a collection review) (need auth)				
+		POST /categories/:cateogryId/collections/:collectionId/products/:productId/reviews (Submit a product review)		
+		POST /categories/:cateogryId/services/:servicesId/reviews (Submit a product review)		
+		GET /reviews (Get my reviews)
+		GET /reviews/:reviewId (Get review details)
+		GET /reviews/undone (aggregate between orders[delivered] & myReviews)
+		PATCH /reviews/:reviewId (Edit review) (from profile)
+		DELETE /reviews/:reviewId (Delete a review)	(from profile)	
+		
+	8- Addresses
+		GET /addresses
+		POST /addresses
+		PATCH /addresses/:addressId		
+		
+	9- Chats (only 1 chat for customer)
+		POST /api/customers/chats (initiate a chat)
+		GET /api/customers/chats/:chatId (get chat messages)
+		POST /api/customes/chats/:chatId (send message)
+		
+__________________________________________________________________________________
+
+
+B- Rider App API: BaseURL: /api/riders
+	1- Authentication
+		POST /auth/signup
+		POST /auth/login
+		POST /auth/verify-otp
+		POST /auth/resend-otp (In case of failure of sending OTP)		
+		POST /auth/forget-password (Sending OTP)
+		POST /auth/reset-password (verify otp & new password)		
+		POST /auth/refresh-token
+	2- Profile & Availability
+		GET /profile (Get profile details)
+		PATCH /profile (Edit profile details)
+		POST /profile/upload-image
+		PATCH /profile/status (Update rider availability)
+		PATCH /profile/change-password
+		GET /notifications (on reciving order)
+	3- Orders
+		GET /orders?status=[pending|assigned] (get all product)
+		GET /orders/:orderId (Get order details)
+		PUT /orders/:orderId/status (Update order status only: shipped,delivered)		
+	4- Vehicle Management
+		GET /vehicle
+		PUT /vehicle (request to update vehicle details), (change accountStatus to pending)
+
+flow : 
+0-must check accountStatus
+1-Reciving order from notification 
+2-Go for status=pending 
+3-Rider accept or deny 
+4-If approve then change order status to shipped && change status to assigned 
+5-After deliver change order status to delivered
+__________________________________________________________________________________
+
+
+C- Vendor, Worker, Admin, Tech Support, and Sales App API
+IMPORTANT notes:
+=================	
+	1- BaseURL: /api
+	2- In auth (send role in body in login to calrify or error)
+	3- after auth (MUST: send role in headers(inside JWT) or error)
+	4- IMPORTANT for each /users/ will be divided into /vendors /workers /admins /tech-supports /sales
+Endpoints:
+============
+	1- Authentication (All roles)
+		POST /workers/auth/signup (for worker only)
+		POST /users/auth/login
+		POST /users/auth/verify-otp 
+		POST /users/auth/forget-password
+		POST /users/auth/reset-password	
+		POST /users/auth/refresh-token		
+		
+	2- Profile & Settings (All roles)
+		GET /users/profile
+		POST /users/profile/upload-image
+		PATCH /users/profile
+		PATCH /users/change-password
+		GET /users/notifications
+		
+	3- Vendor Management (Vendor role)
+		GET /vendors/collections?tag=xyz&search=abc (Get own collection)
+		POST /vendors/collections (Create collection)
+		GET /vendors/collections/:collectionId?tag=xyz (Get collection with products)
+		PATCH /vendors/collections/:collectionId (Update collection details)
+		DELETE /vendors/collections/:collectionId (Delete collection)
+		POST /vendors/collections/:collectionId/products (Create product)
+		PATCH /vendors/collections/:collectionId/products/:productId (Update product details)
+		DELETE /vendors/collections/:collectionId/products/:productId (Delete product)	
+		GET /vendors/orders?collection=abc&status=[any] (Get orders related to vendor)
+		GET /vendors/orders/:orderId (Get specific order details)
+		PATCH /vendors/orders/:orderId/status (Update order status)		
+		GET /vendors/reviews (Get reviews on vendor products)		
+		GET /vendors/revenue?collection=abc (Get vendor revenue details)	
+		
+	4-Worker Management (Worker role)
+		GET /workers/services (Get services provided) (maybe remove and be in get profile)
+		POST /workers/services/:serviceId/reservations (Add a reservation slot)
+		GET /workers/services/:serviceId/reservations (List reservation slots)
+		PATCH /workers/services/:serviceId/reservations/:reservationId/status (Update reservation status)	
+		GET /workers/:workerId/working-hours-days
+		PUT /workers/:workerId/working-hours-days
+		
+	5-SuperAdmin Management:
+		GET /admins (Get admins)
+		POST /admins (Create a new admin)
+		PATCH /admins (Update admin statis)
+		DELETE /admins (Delete admin)
+		
+	5- Admin Management (Admin&SuperAdmin role) 
+		GET /admins/dashboard (Get overview stats)
+		POST /admins/users (Create new user: vendor, sales, techSupport)
+		GET /admins/users (List all users)
+		GET /admins/users/:userId (Get user details)
+		PATCH /admins/riders/:rider/status (Update rider status) //for rider status
+		DELETE /admins/users/:userId (Delete user)
+		
+		GET /admins/categories (Get categories)
+		POST /admins/categories (Create category)
+		PATCH /admins/categories/:categoryId (Update category)
+		DELETE /admins/categories/:categoryId (Delete category)
+		
+		GET /admins/collections (Get collections)
+		DELETE /admins/collections/:collectionId (Delete collection)
+		PATCH /admins/collections/:collectionId/block (Block and unblock collection) (send in body)
+		
+		GET /admins/services (Get services)
+		POST /admins/services (Create service)
+		PATCH /admins/services/:serviceId (Update service)
+		DELETE /admins/services/:serviceId (Delete service)		
+		
+		GET /admins/tags (Manage tags)
+		POST /admins/tags (Create tag)
+		PATCH /admins/tags/:tagId (Update tag)
+		DELETE /admins/tags/:tagId (Delete tag)		
+		
+	6- Sales Management (Sales role)
+		POST /sales/coupons (Create new coupon)
+		GET /sales/coupons (List all coupons)
+		GET /sales/coupons/:couponId (Get coupon details)
+		PATCH /sales/coupons/:couponId (Update coupon)
+		DELETE /sales/coupons/:couponId (Delete coupon)
+		
+	7- Tech Support (Tech Support role)
+		GET /techsupports/chats?status=[active|resolved] (List all active chats)		
+		GET /techsupports/chats/:chatId (Get specific chat)
+		POST /techsupports/chats/:chatId (Send a message)
+		PUT /techsupports/chats/:chatId/status (Update chat status: Close chat)
+
+
+
+
+
+
+
+
